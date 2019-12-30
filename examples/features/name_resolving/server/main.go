@@ -54,10 +54,10 @@ func register() {
 		Name:    "Greet",
 		Address: "192.168.1.42",
 		Port:    50051,
-		Check: &api.AgentServiceCheck{
-			Interval: "10s",
-			HTTP:     "http://192.168.1.42:50051/health",
-		},
+		// Check: &api.AgentServiceCheck{
+		// 	Interval: "10s",
+		// 	HTTP:     "http://192.168.1.42:50051/health",
+		// },
 	}
 	if err := client.Agent().ServiceRegister(service); err != nil {
 		log.Fatalln("failed in service register", err)
