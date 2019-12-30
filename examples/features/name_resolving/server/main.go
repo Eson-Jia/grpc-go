@@ -32,7 +32,7 @@ import (
 	pb "google.golang.org/grpc/examples/features/proto/echo"
 )
 
-const addr = "192.168.1.42:443"
+const addr = "0.0.0.0:443"
 
 type ecServer struct {
 	pb.UnimplementedEchoServer
@@ -51,7 +51,7 @@ func register() {
 		log.Fatalln("failed in new client", err)
 	}
 	service := &api.AgentServiceRegistration{
-		Name:    "hello_world_server",
+		Name:    "Greet",
 		Address: "192.168.1.42",
 		Port:    50051,
 		Check: &api.AgentServiceCheck{
@@ -74,15 +74,18 @@ func main() {
 	log.Printf("serving on %s\n", addr)
 	register()
 	go func() {
+		lis, err := net.Listen("tcp", "0.0.0.0:50051")
+		if err != nil {
+			log.Fatalln("failed in listen", err)
+		}
 		http.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		err := http.Serve(lis, nil)
+		err = http.Serve(lis, nil)
 		if err != nil {
 			log.Fatalln("failed in health serve")
 		}
 	}()
-	select {}
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
