@@ -87,8 +87,8 @@ func main() {
 		makeRPCs(exampleConn, 10)
 	}
 	// consul dns resolver
-	if false {
-		target := "dns://127.0.0.1:8600/hello_world_server.service.consul" //dns://localhost:8600"
+	if true {
+		target := "dns://192.168.1.79:53/hello_world_server.service.consul" //dns://localhost:8600"
 		dnsConn, err := grpc.DialContext(context.Background(),
 			target,
 			grpc.WithInsecure(),
