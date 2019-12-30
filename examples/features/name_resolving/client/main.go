@@ -55,33 +55,52 @@ func makeRPCs(cc *grpc.ClientConn, n int) {
 }
 
 func main() {
-	passthroughConn, err := grpc.Dial(
-		fmt.Sprintf("passthrough:///%s", backendAddr), // Dial to "passthrough:///localhost:50051"
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	)
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+	// passthrough resolver
+	if false {
+		passthroughConn, err := grpc.Dial(
+			fmt.Sprintf("passthrough:///%s", backendAddr), // Dial to "passthrough:///localhost:50051"
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+		)
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer passthroughConn.Close()
+
+		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"passthrough:///%s\"\n", backendAddr)
+		makeRPCs(passthroughConn, 10)
 	}
-	defer passthroughConn.Close()
+	// example resolver
+	if false {
+		exampleConn, err := grpc.Dial(
+			fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName), // Dial to "example:///resolver.example.grpc.io"
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+			// grpc.WithTimeout(time.Second*10),
+		)
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer exampleConn.Close()
 
-	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"passthrough:///%s\"\n", backendAddr)
-	makeRPCs(passthroughConn, 10)
-
-	fmt.Println()
-
-	exampleConn, err := grpc.Dial(
-		fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName), // Dial to "example:///resolver.example.grpc.io"
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	)
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s:///%s\"\n", exampleScheme, exampleServiceName)
+		makeRPCs(exampleConn, 10)
 	}
-	defer exampleConn.Close()
-
-	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s:///%s\"\n", exampleScheme, exampleServiceName)
-	makeRPCs(exampleConn, 10)
+	// consul dns resolver
+	if false {
+		target := "dns://127.0.0.1:8600/hello_world_server.service.consul" //dns://localhost:8600"
+		dnsConn, err := grpc.DialContext(context.Background(),
+			target,
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+		)
+		if err != nil {
+			log.Fatalln("failed in dial:", err)
+		}
+		defer dnsConn.Close()
+		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
+		makeRPCs(dnsConn, 10)
+	}
 }
 
 // Following is an example name resolver. It includes a
@@ -103,7 +122,7 @@ func (*exampleResolverBuilder) Build(target resolver.Target, cc resolver.ClientC
 		target: target,
 		cc:     cc,
 		addrsStore: map[string][]string{
-			exampleServiceName: {backendAddr},
+			exampleServiceName: {"192.168.1.42:443"},
 		},
 	}
 	r.start()

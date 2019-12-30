@@ -24,13 +24,15 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 
 	"google.golang.org/grpc"
 
+	"github.com/hashicorp/consul/api"
 	pb "google.golang.org/grpc/examples/features/proto/echo"
 )
 
-const addr = "localhost:50051"
+const addr = "192.168.1.42:443"
 
 type ecServer struct {
 	pb.UnimplementedEchoServer
@@ -41,6 +43,27 @@ func (s *ecServer) UnaryEcho(ctx context.Context, req *pb.EchoRequest) (*pb.Echo
 	return &pb.EchoResponse{Message: fmt.Sprintf("%s (from %s)", req.Message, s.addr)}, nil
 }
 
+func register() {
+	defaultConf := api.DefaultConfig()
+	defaultConf.Address = "localhost:8500"
+	client, err := api.NewClient(defaultConf)
+	if err != nil {
+		log.Fatalln("failed in new client", err)
+	}
+	service := &api.AgentServiceRegistration{
+		Name:    "hello_world_server",
+		Address: "192.168.1.42",
+		Port:    50051,
+		Check: &api.AgentServiceCheck{
+			Interval: "10s",
+			HTTP:     "http://192.168.1.42:50051/health",
+		},
+	}
+	if err := client.Agent().ServiceRegister(service); err != nil {
+		log.Fatalln("failed in service register", err)
+	}
+}
+
 func main() {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -49,6 +72,17 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterEchoServer(s, &ecServer{addr: addr})
 	log.Printf("serving on %s\n", addr)
+	register()
+	go func() {
+		http.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		err := http.Serve(lis, nil)
+		if err != nil {
+			log.Fatalln("failed in health serve")
+		}
+	}()
+	select {}
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
