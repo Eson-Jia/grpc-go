@@ -86,9 +86,9 @@ func main() {
 		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s:///%s\"\n", exampleScheme, exampleServiceName)
 		makeRPCs(exampleConn, 10)
 	}
-	// consul dns resolver
-	if true {
-		target := "dns://127.0.0.1:8600/greet.service.consul" //dns://localhost:8600"
+	if false {
+		//如果使用 dns://192.168.1.42:443/ 则会报错 Servname not supported for ai_socktype
+		target := "dns:///192.168.1.42:443"
 		dnsConn, err := grpc.DialContext(context.Background(),
 			target,
 			grpc.WithInsecure(),
@@ -101,9 +101,9 @@ func main() {
 		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
 		makeRPCs(dnsConn, 10)
 	}
-	if false {
-		//如果使用 dns://192.168.1.42:443/ 则会报错 Servname not supported for ai_socktype
-		target := "dns:///192.168.1.42:443"
+	// consul dns resolver
+	if true {
+		target := "dns://127.0.0.1:8600/greet.service.consul" //dns://localhost:8600"
 		dnsConn, err := grpc.DialContext(context.Background(),
 			target,
 			grpc.WithInsecure(),
