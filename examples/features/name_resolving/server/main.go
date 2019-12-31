@@ -31,7 +31,7 @@ import (
 	pb "google.golang.org/grpc/examples/features/proto/echo"
 )
 
-const addr = "0.0.0.0:443"
+const addr = "0.0.0.0:50051"
 
 type ecServer struct {
 	pb.UnimplementedEchoServer
@@ -52,7 +52,7 @@ func register() {
 	service := &api.AgentServiceRegistration{
 		Name:    "Greet",
 		Address: "192.168.1.42",
-		Port:    443,
+		Port:    50051,
 	}
 	if err := client.Agent().ServiceRegister(service); err != nil {
 		log.Fatalln("failed in service register", err)

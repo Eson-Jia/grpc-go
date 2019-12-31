@@ -52,3 +52,9 @@ be created to the correct backend.
 [WARN] dns: QName invalid: _grpc_config.greet.service.consul.lan
 [DEBUG] dns: request for name _grpc_config.greet.service.consul.lan. type TXT class IN (took 67.833µs) from client 127.0.0.1:35403 (udp)
 ```
+
+- 果然将 `server`监听和注册的端口由`442`改成`50051`，客户端就无法`RPC`,报的错误如下：
+
+```log
+grpc: addrConn.createTransport failed to connect to {192.168.1.42:443  <nil> 0 <nil>}. Err :connection error: desc = "transport: Error while dialing dial tcp 192.168.1.42:443: connect: connection refused". Reconnecting...
+```
