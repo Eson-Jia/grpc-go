@@ -58,3 +58,5 @@ be created to the correct backend.
 ```log
 grpc: addrConn.createTransport failed to connect to {192.168.1.42:443  <nil> 0 <nil>}. Err :connection error: desc = "transport: Error while dialing dial tcp 192.168.1.42:443: connect: connection refused". Reconnecting...
 ```
+
+- 加上 `Weights`和`TaggedAddresses` 两个字段也不行

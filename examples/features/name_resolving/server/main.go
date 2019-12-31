@@ -53,6 +53,16 @@ func register() {
 		Name:    "Greet",
 		Address: "192.168.1.42",
 		Port:    50051,
+		Weights: &api.AgentWeights{
+			Passing: 5,
+			Warning: 5,
+		},
+		TaggedAddresses: map[string]api.ServiceAddress{
+			"1": api.ServiceAddress{
+				Address: "192.168.1.42",
+				Port:    50051,
+			},
+		},
 	}
 	if err := client.Agent().ServiceRegister(service); err != nil {
 		log.Fatalln("failed in service register", err)
