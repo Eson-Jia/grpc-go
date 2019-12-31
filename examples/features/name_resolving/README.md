@@ -39,3 +39,16 @@ resolver that we installed. The `example` resolver can handle
 `resolver.example.grpc.io` correctly by returning the backend address. So even
 though the backend IP is not set when ClientConn is created, the connection will
 be created to the correct backend.
+
+## debug
+
+这次`consul`还是报警告,应该还是未能解析出来,能正常`RPC`是因为使用了默认的`443`端口，而恰巧 server 监听了默认`443`端口。
+
+```log
+[DEBUG] consul: Skipping self join check for "ubuntu-virtual-machine" since the cluster is too small
+[DEBUG] dns: request for name greet.service.consul. type AAAA class IN (took 193.834µs) from client 127.0.0.1:44734 (udp)
+[DEBUG] dns: request for name greet.service.consul. type A class IN (took 128.377µs) from client 127.0.0.1:33194 (udp)
+[DEBUG] dns: request for name _grpc_config.greet.service.consul. type TXT class IN (took 120.114µs) from client 127.0.0.1:50956 (udp)
+[WARN] dns: QName invalid: _grpc_config.greet.service.consul.lan
+[DEBUG] dns: request for name _grpc_config.greet.service.consul.lan. type TXT class IN (took 67.833µs) from client 127.0.0.1:35403 (udp)
+```

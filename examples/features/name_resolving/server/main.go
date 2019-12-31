@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 
 	"google.golang.org/grpc"
 
@@ -53,11 +52,7 @@ func register() {
 	service := &api.AgentServiceRegistration{
 		Name:    "Greet",
 		Address: "192.168.1.42",
-		Port:    50051,
-		// Check: &api.AgentServiceCheck{
-		// 	Interval: "10s",
-		// 	HTTP:     "http://192.168.1.42:50051/health",
-		// },
+		Port:    443,
 	}
 	if err := client.Agent().ServiceRegister(service); err != nil {
 		log.Fatalln("failed in service register", err)
@@ -73,19 +68,6 @@ func main() {
 	pb.RegisterEchoServer(s, &ecServer{addr: addr})
 	log.Printf("serving on %s\n", addr)
 	register()
-	go func() {
-		lis, err := net.Listen("tcp", "0.0.0.0:50051")
-		if err != nil {
-			log.Fatalln("failed in listen", err)
-		}
-		http.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-		err = http.Serve(lis, nil)
-		if err != nil {
-			log.Fatalln("failed in health serve")
-		}
-	}()
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
