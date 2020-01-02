@@ -26,6 +26,9 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+
+	"google.golang.org/grpc/balancer/roundrobin"
+	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/consul_dns"
 	ecpb "google.golang.org/grpc/examples/features/proto/echo"
 	"google.golang.org/grpc/resolver"
 )
@@ -76,7 +79,6 @@ func main() {
 			fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName), // Dial to "example:///resolver.example.grpc.io"
 			grpc.WithInsecure(),
 			grpc.WithBlock(),
-			// grpc.WithTimeout(time.Second*10),
 		)
 		if err != nil {
 			log.Fatalf("did not connect: %v", err)
@@ -103,11 +105,13 @@ func main() {
 	}
 	// consul dns resolver
 	if true {
-		target := "dns://127.0.0.1:8600/greet.service.consul" //dns://localhost:8600"
+		target := "consul_dns://127.0.0.1:8600/greet.service.consul" //dns://localhost:8600"
 		dnsConn, err := grpc.DialContext(context.Background(),
 			target,
 			grpc.WithInsecure(),
 			grpc.WithBlock(),
+			grpc.WithDisableServiceConfig(),
+			grpc.WithBalancerName(roundrobin.Name),
 		)
 		if err != nil {
 			log.Fatalln("failed in dial:", err)
@@ -137,7 +141,7 @@ func (*exampleResolverBuilder) Build(target resolver.Target, cc resolver.ClientC
 		target: target,
 		cc:     cc,
 		addrsStore: map[string][]string{
-			exampleServiceName: {"192.168.1.42:443"},
+			exampleServiceName: {backendAddr},
 		},
 	}
 	r.start()
