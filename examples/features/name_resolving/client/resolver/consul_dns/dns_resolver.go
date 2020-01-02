@@ -40,7 +40,8 @@ import (
 
 // EnableSRVLookups controls whether the DNS resolver attempts to fetch gRPCLB
 // addresses from SRV records.  Must not be changed after init time.
-var EnableSRVLookups = false
+// 开启 SRV 查找以便使用consul 的 dns 功能
+var EnableSRVLookups = true
 
 func init() {
 	resolver.Register(NewBuilder())
@@ -228,7 +229,10 @@ func (d *dnsResolver) lookupSRV() ([]resolver.Address, error) {
 		return nil, nil
 	}
 	var newAddrs []resolver.Address
-	_, srvs, err := d.resolver.LookupSRV(d.ctx, "grpclb", "tcp", d.host)
+	// net.Resolver.LookupSRV
+	// 将 service,proto,name 拼接成 _service._proto.name
+	// 如果 service 和 proto 都为空字符串，查找的时候只使用 name
+	_, srvs, err := d.resolver.LookupSRV(d.ctx, "", "", d.host)
 	if err != nil {
 		err = handleDNSError(err, "SRV") // may become nil
 		return nil, err
@@ -250,7 +254,8 @@ func (d *dnsResolver) lookupSRV() ([]resolver.Address, error) {
 				return nil, fmt.Errorf("dns: error parsing A record IP address %v", a)
 			}
 			addr := ip + ":" + strconv.Itoa(int(s.Port))
-			newAddrs = append(newAddrs, resolver.Address{Addr: addr, Type: resolver.GRPCLB, ServerName: s.Target})
+			//使用 Backend
+			newAddrs = append(newAddrs, resolver.Address{Addr: addr, Type: resolver.Backend, ServerName: s.Target})
 		}
 	}
 	return newAddrs, nil
