@@ -29,6 +29,7 @@ import (
 
 	"google.golang.org/grpc/balancer/roundrobin"
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/consul_dns"
+	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/custom"
 	ecpb "google.golang.org/grpc/examples/features/proto/echo"
 	"google.golang.org/grpc/resolver"
 )
@@ -36,6 +37,8 @@ import (
 const (
 	exampleScheme      = "example"
 	exampleServiceName = "resolver.example.grpc.io"
+	customScheme       = "custom"
+	customServiceName  = "resolver.custom"
 
 	backendAddr = "localhost:50051"
 )
@@ -104,7 +107,7 @@ func main() {
 		makeRPCs(dnsConn, 10)
 	}
 	// consul dns resolver
-	if true {
+	if false {
 		target := "consul_dns://127.0.0.1:8600/greet.service.consul" //dns://localhost:8600"
 		dnsConn, err := grpc.DialContext(context.Background(),
 			target,
@@ -119,6 +122,21 @@ func main() {
 		defer dnsConn.Close()
 		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
 		makeRPCs(dnsConn, 10)
+	}
+	if true {
+		target := fmt.Sprintf("custom:///%s", customServiceName)
+		customConn, err := grpc.DialContext(
+			context.Background(),
+			target,
+			grpc.WithBlock(),
+			grpc.WithInsecure(),
+		)
+		if err != nil {
+			panic(err)
+		}
+		defer customConn.Close()
+		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
+		makeRPCs(customConn, 10)
 	}
 }
 
