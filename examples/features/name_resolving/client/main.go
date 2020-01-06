@@ -26,10 +26,10 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-
 	"google.golang.org/grpc/balancer/roundrobin"
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/consul_dns"
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/custom"
+	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/etcd"
 	ecpb "google.golang.org/grpc/examples/features/proto/echo"
 	"google.golang.org/grpc/resolver"
 )
@@ -39,6 +39,7 @@ const (
 	exampleServiceName = "resolver.example.grpc.io"
 	customScheme       = "custom"
 	customServiceName  = "resolver.custom"
+	etcdServiceName    = "etcd/service/greet"
 
 	backendAddr = "localhost:50051"
 )
@@ -123,7 +124,7 @@ func main() {
 		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
 		makeRPCs(dnsConn, 10)
 	}
-	if true {
+	if false {
 		target := fmt.Sprintf("custom:///%s", customServiceName)
 		customConn, err := grpc.DialContext(
 			context.Background(),
@@ -137,6 +138,21 @@ func main() {
 		defer customConn.Close()
 		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
 		makeRPCs(customConn, 10)
+	}
+	if true {
+		target := fmt.Sprintf("etcd:///%s", etcdServiceName)
+		conn, err := grpc.DialContext(
+			context.Background(),
+			target,
+			grpc.WithBlock(),
+			grpc.WithInsecure(),
+		)
+		if err != nil {
+			log.Fatalln("failed in dial:", err)
+		}
+		defer conn.Close()
+		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
+		makeRPCs(conn, 10)
 	}
 }
 

@@ -101,7 +101,7 @@ func registerEtcd() error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Put(context.Background(), fmt.Sprintf("/etcd/service/greet/%s", config.ID), string(buff), clientv3.WithLease(leaseRep.ID))
+	_, err = client.Put(context.Background(), fmt.Sprintf("etcd/service/greet/%s", config.ID), string(buff), clientv3.WithLease(leaseRep.ID))
 	if err != nil {
 		return err
 	}
