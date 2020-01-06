@@ -22,6 +22,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"google.golang.org/grpc/examples/features/name_resolving/client/resolver"
 	"log"
@@ -34,10 +35,8 @@ import (
 	pb "google.golang.org/grpc/examples/features/proto/echo"
 )
 
-const host = "192.168.1.42"
-const port = 50051
-
-var addr = fmt.Sprintf("%s:%d", host, port)
+var host = flag.String("host", "0.0.0.0", "host name")
+var port = flag.Int("port", 50051, "the port")
 
 type ecServer struct {
 	pb.UnimplementedEchoServer
@@ -57,8 +56,8 @@ func registerConsul() {
 	}
 	service := &api.AgentServiceRegistration{
 		Name:    "Greet",
-		Address: host,
-		Port:    port,
+		Address: *host,
+		Port:    *port,
 		Weights: &api.AgentWeights{
 			Passing: 5,
 			Warning: 5,
@@ -92,8 +91,8 @@ func registerEtcd() error {
 		}
 	}()
 	config := resolver.Node{
-		Host:   "192.168.1.42",
-		Port:   50051,
+		Host:   *host,
+		Port:   *port,
 		Weight: 10,
 		ID:     "1",
 	}
@@ -109,6 +108,8 @@ func registerEtcd() error {
 }
 
 func main() {
+	flag.Parse()
+	addr := fmt.Sprintf("%s:%d", *host, *port)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
