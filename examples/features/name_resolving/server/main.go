@@ -21,10 +21,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"google.golang.org/grpc/examples/features/name_resolving/client/resolver"
 	"log"
 	"net"
 
+	"github.com/coreos/etcd/clientv3"
 	"google.golang.org/grpc"
 
 	"github.com/hashicorp/consul/api"
@@ -45,7 +48,7 @@ func (s *ecServer) UnaryEcho(ctx context.Context, req *pb.EchoRequest) (*pb.Echo
 	return &pb.EchoResponse{Message: fmt.Sprintf("%s (from %s)", req.Message, s.addr)}, nil
 }
 
-func register() {
+func registerConsul() {
 	defaultConf := api.DefaultConfig()
 	defaultConf.Address = "localhost:8500"
 	client, err := api.NewClient(defaultConf)
@@ -66,6 +69,45 @@ func register() {
 	}
 }
 
+func registerEtcd() error {
+	client, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{
+			"localhost:2379",
+		},
+	})
+	if err != nil {
+		log.Fatalln("failed in new client:", err)
+	}
+	leaseRep, err := client.Grant(context.TODO(), 10)
+	if err != nil {
+		return err
+	}
+	kpaChan, err := client.KeepAlive(context.Background(), leaseRep.ID)
+	if err != nil {
+		return err
+	}
+	go func() {
+		for resp := range kpaChan {
+			log.Println(resp)
+		}
+	}()
+	config := resolver.Node{
+		Host:   "192.168.1.42",
+		Port:   50051,
+		Weight: 10,
+		ID:     "1",
+	}
+	buff, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	_, err = client.Put(context.Background(), fmt.Sprintf("/etcd/service/greet/%s", config.ID), string(buff), clientv3.WithLease(leaseRep.ID))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -74,7 +116,12 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterEchoServer(s, &ecServer{addr: addr})
 	log.Printf("serving on %s\n", addr)
-	register()
+	if false {
+		registerConsul()
+	}
+	if true {
+		registerEtcd()
+	}
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
