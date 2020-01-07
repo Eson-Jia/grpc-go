@@ -23,10 +23,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
+
+	"google.golang.org/grpc"
+
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/consul_dns"
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/custom"
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/etcd"
@@ -54,30 +57,31 @@ func callUnaryEcho(c ecpb.EchoClient, message string) {
 	fmt.Println(r.Message)
 }
 
-func makeRPCs(cc *grpc.ClientConn, n int) {
+func makeRPCs(cc *grpc.ClientConn, n int, options ...string) {
 	hwc := ecpb.NewEchoClient(cc)
 	for i := 0; i < n; i++ {
-		callUnaryEcho(hwc, "this is examples/name_resolving")
+		callUnaryEcho(hwc, "this is examples/name_resolving:"+strings.Join(options, "-"))
 	}
 }
 
-func main() {
+func passThroughDemo() {
 	// passthrough resolver
-	if false {
-		passthroughConn, err := grpc.Dial(
-			fmt.Sprintf("passthrough:///%s", backendAddr), // Dial to "passthrough:///localhost:50051"
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		)
-		if err != nil {
-			log.Fatalf("did not connect: %v", err)
-		}
-		defer passthroughConn.Close()
-
-		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"passthrough:///%s\"\n", backendAddr)
-		makeRPCs(passthroughConn, 10)
+	passthroughConn, err := grpc.Dial(
+		fmt.Sprintf("passthrough:///%s", backendAddr), // Dial to "passthrough:///localhost:50051"
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
 	}
-	// example resolver
+	defer passthroughConn.Close()
+
+	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"passthrough:///%s\"\n", backendAddr)
+	makeRPCs(passthroughConn, 10)
+}
+
+// examplepassThroughDemo 使用 example resolver
+func examplepassThroughDemo() {
 	if false {
 		exampleConn, err := grpc.Dial(
 			fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName), // Dial to "example:///resolver.example.grpc.io"
@@ -92,22 +96,27 @@ func main() {
 		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s:///%s\"\n", exampleScheme, exampleServiceName)
 		makeRPCs(exampleConn, 10)
 	}
-	if false {
-		//如果使用 dns://192.168.1.42:443/ 则会报错 Servname not supported for ai_socktype
-		target := "dns:///192.168.1.42:443"
-		dnsConn, err := grpc.DialContext(context.Background(),
-			target,
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		)
-		if err != nil {
-			log.Fatalln("failed in dial:", err)
-		}
-		defer dnsConn.Close()
-		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
-		makeRPCs(dnsConn, 10)
+}
+
+func basicDNSDemo() {
+	//如果使用 dns://192.168.1.42:443/ 则会报错 Servname not supported for ai_socktype
+	target := "dns:///192.168.1.42:443"
+	dnsConn, err := grpc.DialContext(context.Background(),
+		target,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		log.Fatalln("failed in dial:", err)
 	}
+	defer dnsConn.Close()
+	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
+	makeRPCs(dnsConn, 10)
+}
+
+func consulDNSDemo() {
 	// consul dns resolver
+	//使用 consul 的注册中心和 dns SRV 解析功能
 	if false {
 		target := "consul_dns://127.0.0.1:8600/greet.service.consul" //dns://localhost:8600"
 		dnsConn, err := grpc.DialContext(context.Background(),
@@ -124,36 +133,82 @@ func main() {
 		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
 		makeRPCs(dnsConn, 10)
 	}
-	if false {
-		target := fmt.Sprintf("custom:///%s", customServiceName)
-		customConn, err := grpc.DialContext(
-			context.Background(),
-			target,
-			grpc.WithBlock(),
-			grpc.WithInsecure(),
-		)
-		if err != nil {
-			panic(err)
-		}
-		defer customConn.Close()
-		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
-		makeRPCs(customConn, 10)
+}
+
+// customDemo
+// 完全借鉴 example 的实现方法
+func customDemo() {
+	target := fmt.Sprintf("custom:///%s", customServiceName)
+	customConn, err := grpc.DialContext(
+		context.Background(),
+		target,
+		grpc.WithBlock(),
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		panic(err)
 	}
-	if true {
+	defer customConn.Close()
+	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
+	makeRPCs(customConn, 10)
+}
+
+// etcdDemo
+func etcdDemo(options ...string) {
+	target := fmt.Sprintf("etcd:///%s", etcdServiceName)
+	conn, err := grpc.DialContext(
+		context.Background(),
+		target,
+		grpc.WithBlock(),
+		grpc.WithInsecure(),
+		grpc.WithBalancerName(roundrobin.Name),
+	)
+	if err != nil {
+		log.Fatalln("failed in dial:", err)
+	}
+	defer conn.Close()
+	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
+	makeRPCs(conn, 10, options...)
+}
+
+func etcdRoundRobin() {
+	{
 		target := fmt.Sprintf("etcd:///%s", etcdServiceName)
 		conn, err := grpc.DialContext(
 			context.Background(),
 			target,
 			grpc.WithBlock(),
 			grpc.WithInsecure(),
+			grpc.WithBalancerName(roundrobin.Name),
 		)
 		if err != nil {
 			log.Fatalln("failed in dial:", err)
 		}
 		defer conn.Close()
 		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
-		makeRPCs(conn, 10)
+		makeRPCs(conn, 10, "first")
 	}
+	{
+		target := fmt.Sprintf("etcd:///%s", etcdServiceName)
+		conn, err := grpc.DialContext(
+			context.Background(),
+			target,
+			grpc.WithBlock(),
+			grpc.WithInsecure(),
+			grpc.WithBalancerName(roundrobin.Name),
+		)
+		if err != nil {
+			log.Fatalln("failed in dial:", err)
+		}
+		defer conn.Close()
+		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
+		makeRPCs(conn, 10, "second")
+	}
+	fmt.Println("round robin call finished")
+}
+
+func main() {
+
 }
 
 // Following is an example name resolver. It includes a
