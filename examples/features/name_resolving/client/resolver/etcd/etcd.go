@@ -79,7 +79,7 @@ func (r *Resolver) start() {
 		r.target.Endpoint,
 		clientv3.WithPrefix(),
 	)
-	log.Println("over watch")
+	log.Printf("etcd watching %s\n", r.target.Endpoint)
 	go func() {
 	loop:
 		for {
