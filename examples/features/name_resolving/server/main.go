@@ -35,7 +35,7 @@ import (
 	pb "google.golang.org/grpc/examples/features/proto/echo"
 )
 
-var host = flag.String("host", "0.0.0.0", "host name")
+var host = flag.String("host", "localhost", "host name")
 var port = flag.Int("port", 50051, "the port")
 
 type ecServer struct {
@@ -94,7 +94,7 @@ func registerEtcd() error {
 		Host:   *host,
 		Port:   *port,
 		Weight: 10,
-		ID:     "1",
+		ID:     fmt.Sprintf("%v-%v", *host, *port),
 	}
 	buff, err := json.Marshal(config)
 	if err != nil {
