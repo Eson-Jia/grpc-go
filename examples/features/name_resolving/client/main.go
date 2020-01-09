@@ -155,8 +155,24 @@ func customDemo() {
 	makeRPCs(customConn, 10)
 }
 
-// etcdDemo
-func etcdDemo(options ...string) {
+// etcdResolverDemo
+func etcdResolverDemo(options ...string) {
+	target := fmt.Sprintf("etcd:///%s", etcdServiceName)
+	conn, err := grpc.DialContext(
+		context.Background(),
+		target,
+		grpc.WithBlock(),
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		log.Fatalln("failed in dial:", err)
+	}
+	defer conn.Close()
+	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
+	makeRPCs(conn, 10, options...)
+}
+
+func etcdRoundRobin() {
 	target := fmt.Sprintf("etcd:///%s", etcdServiceName)
 	conn, err := grpc.DialContext(
 		context.Background(),
@@ -170,47 +186,12 @@ func etcdDemo(options ...string) {
 	}
 	defer conn.Close()
 	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
-	makeRPCs(conn, 10, options...)
-}
-
-func etcdRoundRobin() {
-	{
-		target := fmt.Sprintf("etcd:///%s", etcdServiceName)
-		conn, err := grpc.DialContext(
-			context.Background(),
-			target,
-			grpc.WithBlock(),
-			grpc.WithInsecure(),
-			grpc.WithBalancerName(roundrobin.Name),
-		)
-		if err != nil {
-			log.Fatalln("failed in dial:", err)
-		}
-		defer conn.Close()
-		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
-		makeRPCs(conn, 10, "first")
-	}
-	{
-		target := fmt.Sprintf("etcd:///%s", etcdServiceName)
-		conn, err := grpc.DialContext(
-			context.Background(),
-			target,
-			grpc.WithBlock(),
-			grpc.WithInsecure(),
-			grpc.WithBalancerName(roundrobin.Name),
-		)
-		if err != nil {
-			log.Fatalln("failed in dial:", err)
-		}
-		defer conn.Close()
-		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s\"\n", target)
-		makeRPCs(conn, 10, "second")
-	}
+	makeRPCs(conn, 10, "first")
 	fmt.Println("round robin call finished")
 }
 
 func main() {
-	examplepassThroughDemo()
+	etcdResolverDemo()
 }
 
 // Following is an example name resolver. It includes a
