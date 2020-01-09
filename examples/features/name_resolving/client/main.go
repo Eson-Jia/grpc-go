@@ -32,6 +32,10 @@ import (
 
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/consul_dns"
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/custom"
+	// 发现导入此插件以后发现设置环境变量:
+	// GRPC_GO_LOG_VERBOSITY_LEVEL=99
+	// GRPC_GO_LOG_SEVERITY_LEVEL=info
+	// 不能开启测试日志打印
 	_ "google.golang.org/grpc/examples/features/name_resolving/client/resolver/etcd"
 	ecpb "google.golang.org/grpc/examples/features/proto/echo"
 	"google.golang.org/grpc/resolver"
@@ -206,7 +210,7 @@ func etcdRoundRobin() {
 }
 
 func main() {
-
+	examplepassThroughDemo()
 }
 
 // Following is an example name resolver. It includes a
