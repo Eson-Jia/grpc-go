@@ -82,20 +82,18 @@ func passThroughDemo() {
 
 // examplepassThroughDemo 使用 example resolver
 func examplepassThroughDemo() {
-	if false {
-		exampleConn, err := grpc.Dial(
-			fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName), // Dial to "example:///resolver.example.grpc.io"
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		)
-		if err != nil {
-			log.Fatalf("did not connect: %v", err)
-		}
-		defer exampleConn.Close()
-
-		fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s:///%s\"\n", exampleScheme, exampleServiceName)
-		makeRPCs(exampleConn, 10)
+	exampleConn, err := grpc.Dial(
+		fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName), // Dial to "example:///resolver.example.grpc.io"
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
 	}
+	defer exampleConn.Close()
+
+	fmt.Printf("--- calling helloworld.Greeter/SayHello to \"%s:///%s\"\n", exampleScheme, exampleServiceName)
+	makeRPCs(exampleConn, 10)
 }
 
 func basicDNSDemo() {

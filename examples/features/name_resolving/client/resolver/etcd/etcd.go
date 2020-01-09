@@ -36,7 +36,6 @@ func getEtcdClient(address string) (*clientv3.Client, error) {
 func init() {
 	var _ resolver.Resolver = &Resolver{}
 	var _ resolver.Builder = &Builder{}
-	// client.Put(ctx context.Context, key string, val string, opts ...clientv3.OpOption)
 }
 
 type Builder struct{}
