@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer/roundrobin"
 	ecpb "google.golang.org/grpc/examples/features/proto/echo"
 	"google.golang.org/grpc/resolver"
 )
@@ -55,36 +56,41 @@ func makeRPCs(cc *grpc.ClientConn, n int) {
 }
 
 func main() {
-	pickfirstConn, err := grpc.Dial(
-		fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName),
-		// grpc.WithBalancerName("pick_first"), // "pick_first" is the default, so this DialOption is not necessary.
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	)
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+
+	if pickFirst := false; pickFirst {
+		pickfirstConn, err := grpc.Dial(
+			fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName),
+			// grpc.WithBalancerName("pick_first"), // "pick_first" is the default, so this DialOption is not necessary.
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+		)
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer pickfirstConn.Close()
+
+		fmt.Println("--- calling helloworld.Greeter/SayHello with pick_first ---")
+		makeRPCs(pickfirstConn, 10)
+
+		fmt.Println()
 	}
-	defer pickfirstConn.Close()
-
-	fmt.Println("--- calling helloworld.Greeter/SayHello with pick_first ---")
-	makeRPCs(pickfirstConn, 10)
-
-	fmt.Println()
 
 	// Make another ClientConn with round_robin policy.
-	roundrobinConn, err := grpc.Dial(
-		fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName),
-		grpc.WithBalancerName("round_robin"), // This sets the initial balancing policy.
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	)
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer roundrobinConn.Close()
+	if roundRobin := true; roundRobin {
+		roundrobinConn, err := grpc.Dial(
+			fmt.Sprintf("%s:///%s", exampleScheme, exampleServiceName),
+			grpc.WithBalancerName(roundrobin.Name), // This sets the initial balancing policy.
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+		)
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer roundrobinConn.Close()
 
-	fmt.Println("--- calling helloworld.Greeter/SayHello with round_robin ---")
-	makeRPCs(roundrobinConn, 10)
+		fmt.Println("--- calling helloworld.Greeter/SayHello with round_robin ---")
+		makeRPCs(roundrobinConn, 10)
+	}
 }
 
 // Following is an example name resolver implementation. Read the name
