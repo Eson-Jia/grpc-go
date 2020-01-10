@@ -58,6 +58,7 @@ func printFeature(client pb.RouteGuideClient, point *pb.Point) {
 // printFeatures lists all the features within the given bounding Rectangle.
 func printFeatures(client pb.RouteGuideClient, rect *pb.Rectangle) {
 	log.Printf("Looking for features within %v", rect)
+	// 10s 超时,如果极端条件下有很多 Features 那么会触发 context pc error: code = DeadlineExceeded desc = context deadline exceeded
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	stream, err := client.ListFeatures(ctx, rect)
